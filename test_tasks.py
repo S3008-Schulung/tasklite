@@ -30,3 +30,13 @@ class TaskTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CountTests(unittest.TestCase):
+    def setUp(self):
+        tasks.reset()
+
+    def test_count_all(self):
+        tasks.add_task("A")
+        tasks.add_task("B")
+        self.assertEqual(tasks.count_all(), 2)

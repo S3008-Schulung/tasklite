@@ -26,6 +26,11 @@ def open_tasks():
     return [t for t in _tasks if not t["done"]]
 
 
+def count_all():
+    """Anzahl aller Aufgaben (offen + erledigt)."""
+    return len(_tasks)
+
+
 def reset():
     """Nur fuer Tests: Zustand zuruecksetzen."""
     _tasks.clear()
