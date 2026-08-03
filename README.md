@@ -9,3 +9,9 @@ Winzige Aufgabenverwaltung als Seminar-Beispielprojekt (GFU S3008).
 ## Tests
 
     python3 -m unittest -q
+
+## Architektur
+
+TaskLite besteht aus zwei Dateien: `tasks.py` (Fachlogik) und `app.py`
+(HTTP-Schicht). Die Aufgaben liegen im Arbeitspeicher, es gibt keine
+Datenbank — bewusst minimal gehalten.
