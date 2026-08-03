@@ -16,6 +16,7 @@ class TaskHandler(BaseHTTPRequestHandler):
         else:
             self.send_response(404)
             self.end_headers()
+            self.wfile.write(b"unbekannter Pfad")
 
 
 def main(port=8000):
