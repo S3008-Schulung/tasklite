@@ -4,48 +4,75 @@ on:
   push:
     branches: ["feature/**"]
     tags: ["v*"]
-  workflow_dispatch: 
-
-env:
-  TESTING: "1"
+  workflow_dispatch:
+    inputs:
+      artifact_type:
+        description: "Artefakt-Typ"
+        type: choice
+        required: true
+        default: ephemeral
+        options: [ephemeral, release]
+      retention_days:
+        description: "Retention in Tagen (überschreibt Default)"
+        type: string
+        required: false
+      deploy:
+        description: "Nach Build deployen"
+        type: boolean
+        default: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.meta.outputs.name }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Resolve artifact metadata
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TYPE="${{ inputs.artifact_type }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            TYPE="release"
+          else
+            TYPE="ephemeral"
+          fi
+
+          if [[ "$TYPE" == "release" ]]; then
+            DEFAULT_RETENTION=90
+            NAME="release-${{ github.ref_name }}"
+          else
+            DEFAULT_RETENTION=3
+            NAME="build-${{ github.ref_name }}-${{ github.sha }}"
+          fi
+
+          RETENTION="${{ inputs.retention_days }}"
+          RETENTION="${RETENTION:-$DEFAULT_RETENTION}"
+
+          {
+            echo "type=$TYPE"
+            echo "name=${NAME//\//-}"
+            echo "retention=$RETENTION"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build
-        run: make dist   # erzeugt ./dist
+        run: make dist
 
-      # Use Case 1: Feature-Branch – kurzlebig, nur für Debugging/Review
-      - name: Upload feature build
-        if: startsWith(github.ref, 'refs/heads/feature/')
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: build-${{ github.ref_name }}-${{ github.sha }}
+          name: ${{ steps.meta.outputs.name }}
           path: dist/
-          retention-days: 3
-          if-no-files-found: error
-
-      # Use Case 2: Release – langlebig, revisionssicher
-      - name: Upload release artifact
-        if: github.ref_type == 'tag'
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ github.ref_name }}
-          path: dist/
-          retention-days: 90
-          compression-level: 9
+          retention-days: ${{ steps.meta.outputs.retention }}
           if-no-files-found: error
 
   deploy:
     needs: build
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' || inputs.deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Download release artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: release-${{ github.ref_name }}
+          name: ${{ needs.build.outputs.artifact_name }}
           path: dist/
