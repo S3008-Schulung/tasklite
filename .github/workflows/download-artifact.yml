@@ -4,6 +4,7 @@ on:
   push:
     branches: ["feature/**"]
     tags: ["v*"]
+  workflow_run: 
 
 jobs:
   build:
