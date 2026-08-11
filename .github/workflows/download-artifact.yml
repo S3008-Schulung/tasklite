@@ -2,8 +2,7 @@ name: build
 
 on:
   push:
-    branches: ["feature/**"]
-    tags: ["v*"]
+    branches: ["feature/**", "release/**"]
   workflow_dispatch:
     inputs:
       artifact_type:
@@ -34,7 +33,7 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             TYPE="${{ inputs.artifact_type }}"
-          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+          elif [[ "${{ startsWith(github.ref, 'refs/heads/release') }}" ]]; then
             TYPE="release"
           else
             TYPE="ephemeral"
