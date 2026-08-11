@@ -6,6 +6,9 @@ on:
     tags: ["v*"]
   workflow_dispatch: 
 
+env:
+  TESTING: "1"
+
 jobs:
   build:
     runs-on: ubuntu-latest
