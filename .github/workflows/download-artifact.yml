@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+    branches: ["feature/**"]
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: make dist   # erzeugt ./dist
+
+      # Use Case 1: Feature-Branch – kurzlebig, nur für Debugging/Review
+      - name: Upload feature build
+        if: startsWith(github.ref, 'refs/heads/feature/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.ref_name }}-${{ github.sha }}
+          path: dist/
+          retention-days: 3
+          if-no-files-found: error
+
+      # Use Case 2: Release – langlebig, revisionssicher
+      - name: Upload release artifact
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.ref_name }}
+          path: dist/
+          retention-days: 90
+          compression-level: 9
+          if-no-files-found: error
+
+  deploy:
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-${{ github.ref_name }}
+          path: dist/
